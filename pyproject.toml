@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling>=1.21"]
+requires = ["hatchling>=1.26"]
 build-backend = "hatchling.build"
 
 [project]
@@ -8,14 +8,14 @@ version = "0.1.0"
 description = "A microkernel framework for Python: containers, components, services, extension points and events."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ name = "corlet contributors" }]
 keywords = ["microkernel", "plugin", "component", "container", "di", "extension-point"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Framework :: AsyncIO",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -30,6 +30,11 @@ dependencies = []
 pydantic = ["pydantic>=2.5"]
 yaml = ["pyyaml>=6"]
 all = ["pydantic>=2.5", "pyyaml>=6"]
+
+[project.urls]
+Repository = "https://github.com/FrostMiKu/corlet"
+Issues = "https://github.com/FrostMiKu/corlet/issues"
+Documentation = "https://github.com/FrostMiKu/corlet/tree/main/docs"
 
 [project.scripts]
 corlet = "corlet.std.cli:main"

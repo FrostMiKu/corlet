@@ -286,7 +286,7 @@ curl -X POST localhost:8765/components/shop.pricing.vat/disable
 
 ## 文档
 
-完整文档位于 [`docs/`](docs/index.md)，包括快速上手、核心概念、标准组件、命令行、测试、实践指南，
+完整文档位于 [`docs/`](https://github.com/FrostMiKu/corlet/blob/main/docs/index.md)，包括快速上手、核心概念、标准组件、命令行、测试、实践指南，
 以及从 docstring 生成的 API 参考。本地预览：
 
 ```bash
