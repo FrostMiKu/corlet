@@ -57,6 +57,9 @@ raise SystemExit(Container(GreeterComponent, App).run())
 **异步优先**
 :   内核基于 asyncio；同步组件可直接使用，阻塞代码可声明在线程中运行。
 
+**不占用终端**
+:   框架只写入 `corlet` logger，日志输出到哪里由应用决定。CLI 和 TUI 程序的终端只属于程序自己。
+
 </div>
 
 ## 文档导航

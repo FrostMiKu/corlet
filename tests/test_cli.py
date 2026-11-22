@@ -135,3 +135,56 @@ async def test_shop_example_in_process() -> None:
         await container.disable("shop.storage.memory")
         assert not container.services.has(Orders)  # orders stopped with its storage
     assert_no_leaks(container)
+
+
+def test_log_level_defaults_and_flags(monkeypatch: pytest.MonkeyPatch) -> None:
+    import argparse
+
+    from corlet.std.cli import log_level_for
+
+    monkeypatch.delenv("CORLET_LOG_LEVEL", raising=False)
+
+    def ns(**kw: object) -> argparse.Namespace:
+        return argparse.Namespace(**{"log_level": None, "verbose": 0, "quiet": False, **kw})
+
+    assert log_level_for(ns(), "run") == "INFO"
+    assert log_level_for(ns(), "list") == "WARNING"
+    assert log_level_for(ns(), "my-command") == "WARNING"
+    assert log_level_for(ns(verbose=1), "list") == "INFO"
+    assert log_level_for(ns(verbose=5), "run") == "DEBUG"
+    assert log_level_for(ns(quiet=True), "run") == "ERROR"
+    assert log_level_for(ns(log_level="debug", quiet=True), "list") == "DEBUG"
+    monkeypatch.setenv("CORLET_LOG_LEVEL", "error")
+    assert log_level_for(ns(), "run") == "ERROR"
+
+
+def test_log_file_option(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    import logging
+
+    log_file = tmp_path / "corlet.log"
+    code = main(
+        [
+            "--no-entry-points",
+            "-a",
+            "corlet.std.health",
+            "--disable",
+            "no.such.component",
+            "--log-file",
+            str(log_file),
+            "list",
+        ]
+    )
+    out, err = capsys.readouterr()
+    assert code == 0 and "corlet.health" in out
+    assert err == ""
+    assert "unknown component 'no.such.component'" in log_file.read_text()
+    assert logging.getLogger().level == logging.WARNING  # default for non-'run' commands
+
+
+def test_contributed_command_output_is_clean(capsys: pytest.CaptureFixture[str]) -> None:
+    # without the app's own corlet.logging component, the CLI default (WARNING) applies
+    args = ["--no-entry-points", *SHOP, "--disable", "corlet.logging"]
+    code = main([*args, "-s", "components.corlet.admin.port=0", "demo", "bob"])
+    out, err = capsys.readouterr()
+    assert code == 0 and "bob pays" in out
+    assert err == ""

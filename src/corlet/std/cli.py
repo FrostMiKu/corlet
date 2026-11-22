@@ -17,6 +17,9 @@ Global options select the application:
 ``--std NAMES``
     add standard components: ``config, config-watcher, logging, scheduler,
     health, admin, reload`` or ``all``.
+``--log-level``, ``-v``, ``-q``, ``--log-file``, ``--log-format``
+    logging of the command itself (see `log_level_for()`); logs go to stderr
+    unless ``--log-file`` is given.
 
 Defaults can live in ``pyproject.toml``::
 
@@ -63,7 +66,7 @@ from ..core import (
 from .config import LayeredConfig
 from .logging import configure_logging
 
-__all__ = ["CLI_COMMANDS", "CliCommand", "build_container", "main"]
+__all__ = ["CLI_COMMANDS", "CliCommand", "build_container", "log_level_for", "main"]
 
 
 @dataclass(frozen=True)
@@ -415,9 +418,50 @@ def _global_parser(add_help: bool) -> argparse.ArgumentParser:
         default=True,
         help="discover installed components via entry points (default: on)",
     )
-    p.add_argument("--log-level", default=os.environ.get("CORLET_LOG_LEVEL", "INFO"))
+    p.add_argument(
+        "--log-level",
+        metavar="LEVEL",
+        help="log level (default: $CORLET_LOG_LEVEL, else INFO for 'run' and WARNING otherwise)",
+    )
+    p.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=0,
+        help="lower the log level one step per -v (WARNING -> INFO -> DEBUG)",
+    )
+    p.add_argument("-q", "--quiet", action="store_true", help="only log errors")
+    p.add_argument("--log-file", metavar="PATH", help="write logs to PATH instead of stderr")
     p.add_argument("--log-format", choices=["text", "json"], default="text")
     return p
+
+
+_LEVEL_STEPS = ["DEBUG", "INFO", "WARNING", "ERROR"]
+
+
+def log_level_for(args: argparse.Namespace, command: str | None) -> str:
+    """The log level for ``command`` given the global options.
+
+    Precedence: ``--log-level``, then ``-q``/``-v``, then
+    ``$CORLET_LOG_LEVEL``, then the default: ``INFO`` for ``run`` (a long
+    running application) and ``WARNING`` for every other command.
+    """
+    if args.log_level:
+        return str(args.log_level).upper()
+    if args.quiet:
+        return "ERROR"
+    base = os.environ.get("CORLET_LOG_LEVEL", "").upper() or (
+        "INFO" if command == "run" else "WARNING"
+    )
+    verbose = int(args.verbose or 0)
+    if verbose and base in _LEVEL_STEPS:
+        return _LEVEL_STEPS[max(0, _LEVEL_STEPS.index(base) - verbose)]
+    return base
+
+
+def _command_of(rest: Sequence[str]) -> str | None:
+    """First positional token left after the global options: the command."""
+    return next((tok for tok in rest if not tok.startswith("-")), None)
 
 
 def _contributed(container: Container) -> list[CliCommand]:
@@ -435,8 +479,17 @@ def _contributed(container: Container) -> list[CliCommand]:
 def main(argv: Sequence[str] | None = None) -> int:
     """Entry point of the ``corlet`` command; returns the process exit code."""
     argv = list(sys.argv[1:] if argv is None else argv)
-    pre, _ = _global_parser(add_help=False).parse_known_args(argv)
-    configure_logging(pre.log_level, format=pre.log_format)
+    pre, rest = _global_parser(add_help=False).parse_known_args(argv)
+    try:
+        configure_logging(
+            log_level_for(pre, _command_of(rest)),
+            format=pre.log_format,
+            output="file" if pre.log_file else "stderr",
+            file=pre.log_file,
+        )
+    except (ValueError, OSError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
 
     container: Container | None = None
     load_error: BaseException | None = None

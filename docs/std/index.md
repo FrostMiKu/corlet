@@ -7,7 +7,7 @@
 |---|---|---|---|
 | `corlet.config` | `ConfigServiceComponent` | `ConfigService` | 读取配置树中的应用级设置 |
 | `corlet.config.watcher` | `ConfigWatcher` | — | 配置文件变化时自动重载 |
-| `corlet.logging` | `LoggingComponent` | — | 配置日志；记录带组件 id；可选 JSON 格式 |
+| `corlet.logging` | `LoggingComponent` | — | 配置日志输出（stderr / stdout / 文件）；记录带组件 id；可选 JSON 格式 |
 | `corlet.scheduler` | `SchedulerComponent` | `Scheduler` | 周期 / 延迟任务；定义 `JOBS` 扩展点 |
 | `corlet.health` | `HealthComponent` | `HealthService` | 汇总健康检查；定义 `HEALTH_CHECKS` 扩展点 |
 | `corlet.admin` | `AdminComponent` | `AdminServer` | HTTP 管理端点；定义 `ADMIN_ROUTES` 扩展点 |

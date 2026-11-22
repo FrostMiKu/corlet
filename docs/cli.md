@@ -34,7 +34,10 @@ corlet [全局选项] 命令 [命令选项]
 | `--disable ID` | 禁用组件，可重复 |
 | `--strict` | 启用严格模式 |
 | `--entry-points / --no-entry-points` | 是否发现通过入口点安装的组件（默认开启） |
-| `--log-level LEVEL` | 日志级别，默认 `INFO`（或环境变量 `CORLET_LOG_LEVEL`） |
+| `--log-level LEVEL` | 日志级别，见下文[日志](#日志) |
+| `-v, --verbose` | 每个 `-v` 把日志级别降低一级（WARNING → INFO → DEBUG） |
+| `-q, --quiet` | 只记录错误 |
+| `--log-file PATH` | 把日志写入文件，而不是 stderr |
 | `--log-format text\|json` | 日志格式 |
 
 ## 命令
@@ -93,6 +96,29 @@ corlet -a myapp -c app.toml config myapp.db          # 某组件的原始配置�
 ### doctor
 
 输出 Python 和 corlet 版本、各组件来源及其加载问题，再执行 `check`。
+
+## 日志
+
+命令行把日志写到 **stderr**（或 `--log-file` 指定的文件），命令本身的输出写到 stdout，两者互不干扰。
+
+默认级别取决于命令：
+
+| 命令 | 默认级别 |
+|---|---|
+| `run` | `INFO`：长期运行的应用，记录启动、停止等生命周期信息 |
+| 其他内置命令和组件贡献的子命令 | `WARNING`：只在有问题时输出 |
+
+级别的确定顺序：`--log-level` > `-q` / `-v` > 环境变量 `CORLET_LOG_LEVEL` > 上表的默认值。
+
+```bash
+corlet -a myapp run                          # INFO
+corlet -a myapp -v import data.csv           # 子命令，INFO
+corlet -a myapp --log-file app.log run       # 日志写入文件，终端保持干净
+CORLET_LOG_LEVEL=DEBUG corlet -a myapp check
+```
+
+应用中加入了 [`corlet.logging`](std/logging.md#loggingcomponent) 组件时，组件启动后按它的配置
+接管日志输出。
 
 ## 在 pyproject.toml 中设置默认值
 

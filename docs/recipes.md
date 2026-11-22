@@ -87,6 +87,32 @@ raise SystemExit(Container(...).run(main))
 
 或者在组件中完成工作后调用 `ctx.request_shutdown()`。
 
+## CLI 和 TUI 程序
+
+corlet 不向终端写入任何内容，界面完全由程序控制。需要日志时，把它写到文件或界面中的日志面板：
+
+```python
+from corlet.std import configure_logging
+
+configure_logging("INFO", output="file", file="~/.mytool/mytool.log")
+
+async def main(container: Container) -> None:
+    await MyTuiApp(container).run_async()
+
+raise SystemExit(Container(...).run(main))
+```
+
+组件状态可以直接在界面上展示，不必经过日志：
+
+```python
+def on_change(event: ComponentStateChanged) -> None:
+    status_bar.update(f"{event.component_id}: {event.new.value}")
+
+container.events.subscribe(ComponentStateChanged, on_change)
+```
+
+接入日志面板的写法见 [日志](std/logging.md#在-cli-和-tui-程序中)。
+
 ## 在启动时做的事依赖另一个组件"已准备好"
 
 把"准备好"建模为服务：提供者在准备工作完成后才注册服务，使用方声明对该服务的依赖。容器保证

@@ -2,7 +2,14 @@
 
 Everything an application or component needs is re-exported here (and from
 the top-level `corlet` package).
+
+The framework and its components log to the ``corlet`` logger hierarchy
+(components to ``corlet.component.<id>``) and never configure output
+themselves: the application decides where records go, e.g. with
+`corlet.std.logging.configure_logging()` or the ``corlet.logging`` component.
 """
+
+import logging as _logging
 
 from .component import Component, component, is_component, manifest_of
 from .config import ConfigSource, DictConfigSource, config_section, deep_merge, validate_config
@@ -62,6 +69,8 @@ from .manifest import (
 from .registry import ServiceRef, ServiceRegistration, ServiceRegistry
 from .resolver import Resolution, Resolver
 from .version import Version, VersionConstraint
+
+_logging.getLogger("corlet").addHandler(_logging.NullHandler())
 
 __all__ = [
     "Activation",

@@ -42,7 +42,7 @@ from corlet.std import (
     SchedulerComponent,
     Status,
 )
-from corlet.std.logging import ComponentFilter
+from corlet.std.logging import ComponentFilter, configure_logging
 from corlet.testing import running, wait_for_state
 
 # ---------------------------------------------------------------------------
@@ -167,6 +167,108 @@ async def test_logging_component_filter_and_json(capsys: pytest.CaptureFixture[s
     by_msg = {entry["message"]: entry for entry in lines}
     assert by_msg["hello from start"]["component"] == "t.chatty"
     assert by_msg["from background"]["component"] == "t.chatty"  # via contextvar
+
+
+SILENT_APP = """
+import asyncio
+from corlet import Component, Container, component
+
+@component("app.ok", provides=["thing"])  # declared but not registered -> warning
+class Ok(Component):
+    async def start(self, ctx):
+        ctx.logger.warning("component warning")
+
+@component("app.broken")
+class Broken(Component):
+    async def start(self, ctx):
+        raise RuntimeError("boom")
+
+async def main(container):
+    print("app output")
+
+Container(Ok, Broken, fail_fast=False).run(main, install_signal_handlers=False)
+"""
+
+
+def test_no_output_without_logging_configuration(tmp_path: Path) -> None:
+    import subprocess
+    import sys
+
+    script = tmp_path / "app.py"
+    script.write_text(SILENT_APP)
+    proc = subprocess.run(
+        [sys.executable, str(script)], capture_output=True, text=True, timeout=30, check=True
+    )
+    assert proc.stdout == "app output\n"
+    assert proc.stderr == ""
+
+
+def test_configure_logging_outputs(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    log = logging.getLogger("corlet.test")
+
+    configure_logging("INFO", output="stdout")
+    log.info("to stdout")
+    out = capsys.readouterr()
+    assert "to stdout" in out.out and out.err == ""
+
+    path = tmp_path / "logs" / "app.log"  # parent directory is created
+    file_handler = configure_logging("INFO", output="file", file=path, format="json")
+    log.warning("to file")
+    assert json.loads(path.read_text().splitlines()[-1])["message"] == "to file"
+    assert capsys.readouterr().out == ""
+
+    assert configure_logging("INFO", output="none") is None
+    assert file_handler is not None and file_handler.stream is None  # replaced -> closed
+    log.warning("nowhere")
+    assert "nowhere" not in path.read_text()
+    assert capsys.readouterr() == ("", "")
+
+    class Collect(logging.Handler):
+        def __init__(self) -> None:
+            super().__init__()
+            self.records: list[logging.LogRecord] = []
+
+        def emit(self, record: logging.LogRecord) -> None:
+            self.records.append(record)
+
+    custom = Collect()
+    custom.setFormatter(logging.Formatter("%(message)s"))
+    assert configure_logging("DEBUG", handler=custom) is custom
+    log.debug("to handler")
+    assert custom.records[-1].component == "-"  # type: ignore[attr-defined]
+    assert custom.format(custom.records[-1]) == "to handler"  # own formatter kept
+    configure_logging("INFO", output="none")
+    assert logging.getLogger().handlers.count(custom) == 0
+
+
+def test_configure_logging_rejects_bad_arguments(tmp_path: Path) -> None:
+    installed = configure_logging("INFO", output="none", levels={})
+    assert installed is None
+    with pytest.raises(ValueError, match="requires a file"):
+        configure_logging("INFO", output="file")
+    with pytest.raises(ValueError, match="unknown log level"):
+        configure_logging("LOUD")
+    with pytest.raises(ValueError, match="unknown log output"):
+        configure_logging("INFO", output="syslog")  # type: ignore[arg-type]
+
+
+async def test_logging_component_writes_to_file(tmp_path: Path) -> None:
+    path = tmp_path / "app.log"
+
+    @component("t.writer")
+    class Writer(Component):
+        async def start(self, ctx: ComponentContext) -> None:
+            ctx.logger.info("hello file")
+
+    cfg = {"components": {"corlet.logging": {"output": "file", "file": str(path)}}}
+    async with running(LoggingComponent, config=cfg), running(Writer):
+        pass
+    assert "[t.writer]" in path.read_text() and "hello file" in path.read_text()
+
+    bad = {"components": {"corlet.logging": {"output": "file"}}}
+    async with running(LoggingComponent, config=bad, fail_fast=False) as c:
+        assert c.state_of("corlet.logging") is ComponentState.FAILED
+        assert "file: required" in str(c.error_of("corlet.logging"))
 
 
 def test_component_filter_outside_components() -> None:

@@ -24,6 +24,7 @@
 - **静态装配，动态启停**：组件集合在启动前确定；运行期可 `enable` / `disable` / `restart`，依赖方自动级联。
 - **自动回收**：通过 `ctx` 注册的服务、扩展、订阅、后台任务、清理回调，停止时由容器统一释放。
 - **异步优先**：内核基于 asyncio；同步组件可直接使用，阻塞代码可声明在线程中运行。
+- **不占用终端**：框架只写入 `corlet` logger，日志输出到哪里由应用决定，适合 CLI / TUI 程序。
 - Python ≥ 3.11；推荐（非必需）Pydantic v2 做配置 schema。
 
 ## 安装
@@ -230,7 +231,7 @@ currency = "EUR"
 |---|---|
 | `corlet.config` | `ConfigService`：读取原始配置树中的应用级设置 |
 | `corlet.config.watcher` | 配置文件变更时自动 `reload_config()` |
-| `corlet.logging` | 配置 logging；日志记录自动带 `component` 字段；可选 JSON 输出 |
+| `corlet.logging` | 配置日志输出（stderr / stdout / 文件）；日志记录自动带 `component` 字段；可选 JSON 格式 |
 | `corlet.scheduler` | `Scheduler` 服务 + `JOBS` 扩展点；任务随所属组件停止而取消 |
 | `corlet.health` | `HealthService`：聚合 `HEALTH_CHECKS` 贡献 + 组件状态 |
 | `corlet.admin` | 零依赖 HTTP 管理端点：`/health` `/components` `/services` `/extensions` `/graph`，`POST /components/{id}/enable|disable|restart`；路由可经 `ADMIN_ROUTES` 扩展 |
