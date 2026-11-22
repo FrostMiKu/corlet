@@ -1,0 +1,17 @@
+[container]
+# disabled = ["shop.pricing.vat"]
+
+[components."corlet.logging"]
+level = "INFO"
+format = "text"
+
+[components."corlet.admin"]
+port = 8765
+allow_control = true
+
+[components.shop.orders]
+currency = "EUR"
+
+[components.shop.pricing.discount]
+percent = 15
+vip = ["alice"]

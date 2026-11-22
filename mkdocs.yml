@@ -1,0 +1,126 @@
+site_name: corlet
+site_description: Python 微内核框架：组件 + 容器
+repo_name: corlet
+docs_dir: docs
+strict: true
+
+validation:
+  links:
+    anchors: warn
+    unrecognized_links: warn
+
+theme:
+  name: material
+  language: zh
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - content.code.copy
+    - search.suggest
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: 切换到深色模式
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: 切换到浅色模式
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+
+plugins:
+  - search
+  - autorefs
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
+            docstring_section_style: table
+            show_source: false
+            show_root_heading: true
+            show_root_full_path: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            show_signature_annotations: true
+            separate_signature: true
+            signature_crossrefs: true
+            merge_init_into_class: true
+            members_order: source
+            heading_level: 2
+            filters: ["!^_"]
+            show_if_no_docstring: false
+
+nav:
+  - 首页: index.md
+  - 快速上手: getting-started.md
+  - 核心概念:
+      - 架构总览: concepts/architecture.md
+      - 组件与清单: concepts/components.md
+      - 生命周期: concepts/lifecycle.md
+      - 服务: concepts/services.md
+      - 扩展点: concepts/extensions.md
+      - 事件: concepts/events.md
+      - ComponentContext: concepts/context.md
+      - 配置: concepts/configuration.md
+      - 发现与打包: concepts/discovery.md
+  - 标准组件:
+      - std/index.md
+      - 配置: std/config.md
+      - 日志: std/logging.md
+      - 调度: std/scheduler.md
+      - 健康检查: std/health.md
+      - 管理端点: std/admin.md
+      - 热重载: std/reload.md
+  - 命令行: cli.md
+  - 测试: testing.md
+  - 实践指南: recipes.md
+  - API 参考:
+      - api/index.md
+      - 内核:
+          - Container: api/container.md
+          - 组件与清单: api/component.md
+          - ComponentContext: api/context.md
+          - 服务注册表: api/registry.md
+          - 扩展点: api/extensions.md
+          - 事件总线: api/events.md
+          - 生命周期: api/lifecycle.md
+          - 依赖解析: api/resolver.md
+          - 配置: api/config.md
+          - 组件发现: api/discovery.md
+          - 自省: api/introspect.md
+          - 版本: api/version.md
+          - 异常: api/errors.md
+      - 标准组件:
+          - corlet.std.config: api/std/config.md
+          - corlet.std.logging: api/std/logging.md
+          - corlet.std.scheduler: api/std/scheduler.md
+          - corlet.std.health: api/std/health.md
+          - corlet.std.admin: api/std/admin.md
+          - corlet.std.reload: api/std/reload.md
+          - corlet.std.cli: api/std/cli.md
+      - 测试工具: api/testing.md
